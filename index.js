@@ -16,7 +16,7 @@ const config = {
   },
   schedules: {
     clockIn: process.env.CLOCK_IN_SCHEDULE || '0 9 * * 1-5', // Default: 9 AM weekdays
-    clockOut: process.env.CLOCK_OUT_SCHEDULE || '0 17 * * 1-5', // Default: 5 PM weekdays
+    clockOut: process.env.CLOCK_OUT_SCHEDULE || '0 18 * * 1-5', // Default: 6 PM weekdays
   },
   headless: process.env.HEADLESS === 'true',
 };
