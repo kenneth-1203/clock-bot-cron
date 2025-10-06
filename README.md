@@ -1,12 +1,12 @@
 # clock-bot-cron
 
-An automated bot that logs into a website and clicks a button on a scheduled time. Designed to run 24/5 (24 hours a day, 5 days a week - weekdays only).
+An automated bot that logs into a website and clicks buttons on scheduled times. Supports dual scheduling for clock-in and clock-out operations. Designed to run 24/5 (24 hours a day, 5 days a week - weekdays only).
 
 ## Features
 
 - 🤖 Automated website login
-- 🖱️ Automated button clicking
-- ⏰ Cron-based scheduling (configurable)
+- 🖱️ Dual button clicking (clock-in & clock-out)
+- ⏰ Separate cron-based schedules for each action
 - 🔒 Environment-based configuration
 - 📝 Detailed logging
 - 🌐 Headless browser support
@@ -41,13 +41,15 @@ USERNAME=your_username
 PASSWORD=your_password
 
 # Update these selectors based on your target website
-LOGIN_USERNAME_SELECTOR=#username
-LOGIN_PASSWORD_SELECTOR=#password
-LOGIN_BUTTON_SELECTOR=#login-button
-TARGET_BUTTON_SELECTOR=#clock-in-button
+LOGIN_USERNAME_SELECTOR="#username"
+LOGIN_PASSWORD_SELECTOR="#password"
+LOGIN_BUTTON_SELECTOR="#login-button"
+CLOCK_IN_BUTTON_SELECTOR="#clock-in-button"
+CLOCK_OUT_BUTTON_SELECTOR="#clock-out-button"
 
-# Cron schedule (default: 9 AM, Monday to Friday)
-CRON_SCHEDULE=0 9 * * 1-5
+# Cron schedules
+CLOCK_IN_SCHEDULE=0 9 * * 1-5   # 9 AM, Monday to Friday
+CLOCK_OUT_SCHEDULE=0 17 * * 1-5 # 5 PM, Monday to Friday
 
 HEADLESS=true
 ```
@@ -67,7 +69,7 @@ To find the correct selectors for your website:
 
 ### Cron Schedule Format
 
-The `CRON_SCHEDULE` uses the standard cron format:
+The bot supports two separate schedules: `CLOCK_IN_SCHEDULE` and `CLOCK_OUT_SCHEDULE`, both using the standard cron format:
 ```
 * * * * *
 │ │ │ │ │
@@ -79,10 +81,10 @@ The `CRON_SCHEDULE` uses the standard cron format:
 ```
 
 **Examples:**
-- `0 9 * * 1-5` - 9:00 AM, Monday to Friday (24/5 operation)
-- `0 17 * * 1-5` - 5:00 PM, Monday to Friday
-- `30 8 * * *` - 8:30 AM, every day
-- `0 9,17 * * 1-5` - 9 AM and 5 PM, Monday to Friday
+- `CLOCK_IN_SCHEDULE=0 9 * * 1-5` - 9:00 AM, Monday to Friday
+- `CLOCK_OUT_SCHEDULE=0 17 * * 1-5` - 5:00 PM, Monday to Friday
+- `CLOCK_IN_SCHEDULE=30 8 * * *` - 8:30 AM, every day
+- `CLOCK_OUT_SCHEDULE=0 18 * * 1-5` - 6:00 PM, Monday to Friday
 
 ### Timezone
 
@@ -108,14 +110,20 @@ npm start
 
 The bot will:
 1. Validate your configuration
-2. Wait for the scheduled time
-3. When triggered:
+2. Wait for the scheduled times (clock-in and clock-out)
+3. When clock-in is triggered:
    - Open a browser
    - Navigate to your website
    - Log in with your credentials
-   - Click the target button
+   - Click the clock-in button
    - Close the browser
-4. Repeat based on the cron schedule
+4. When clock-out is triggered:
+   - Open a browser
+   - Navigate to your website
+   - Log in with your credentials
+   - Click the clock-out button
+   - Close the browser
+5. Repeat based on the cron schedules
 
 ### Stop the bot:
 Press `Ctrl+C` to gracefully stop the bot.

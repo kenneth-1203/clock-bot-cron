@@ -11,19 +11,25 @@ const config = {
     loginUsername: process.env.LOGIN_USERNAME_SELECTOR,
     loginPassword: process.env.LOGIN_PASSWORD_SELECTOR,
     loginButton: process.env.LOGIN_BUTTON_SELECTOR,
-    targetButton: process.env.TARGET_BUTTON_SELECTOR,
+    clockInButton: process.env.CLOCK_IN_BUTTON_SELECTOR,
+    clockOutButton: process.env.CLOCK_OUT_BUTTON_SELECTOR,
   },
-  cronSchedule: process.env.CRON_SCHEDULE || '0 9 * * 1-5', // Default: 9 AM weekdays
+  schedules: {
+    clockIn: process.env.CLOCK_IN_SCHEDULE || '0 9 * * 1-5', // Default: 9 AM weekdays
+    clockOut: process.env.CLOCK_OUT_SCHEDULE || '0 17 * * 1-5', // Default: 5 PM weekdays
+  },
   headless: process.env.HEADLESS === 'true',
 };
 
 /**
- * Main bot function that logs in and clicks the target button
+ * Main bot function that logs in and clicks a button
+ * @param {string} buttonSelector - The CSS selector for the button to click
+ * @param {string} action - Description of the action (e.g., 'clock-in', 'clock-out')
  */
-async function runBot() {
+async function runBot(buttonSelector, action = 'button click') {
   let browser;
   try {
-    console.log(`[${new Date().toISOString()}] Starting bot...`);
+    console.log(`[${new Date().toISOString()}] Starting bot for ${action}...`);
 
     // Launch browser
     browser = await puppeteer.launch({
@@ -59,19 +65,19 @@ async function runBot() {
     console.log(`[${new Date().toISOString()}] Successfully logged in!`);
 
     // Wait for and click the target button
-    console.log(`[${new Date().toISOString()}] Waiting for target button...`);
-    await page.waitForSelector(config.selectors.targetButton, { timeout: 10000 });
+    console.log(`[${new Date().toISOString()}] Waiting for ${action} button...`);
+    await page.waitForSelector(buttonSelector, { timeout: 10000 });
     
-    console.log(`[${new Date().toISOString()}] Clicking target button...`);
-    await page.click(config.selectors.targetButton);
+    console.log(`[${new Date().toISOString()}] Clicking ${action} button...`);
+    await page.click(buttonSelector);
 
     // Wait a moment to ensure action is completed
     await page.waitForTimeout(2000);
 
-    console.log(`[${new Date().toISOString()}] Bot task completed successfully!`);
+    console.log(`[${new Date().toISOString()}] ${action} completed successfully!`);
 
   } catch (error) {
-    console.error(`[${new Date().toISOString()}] Error occurred:`, error.message);
+    console.error(`[${new Date().toISOString()}] Error occurred during ${action}:`, error.message);
     throw error;
   } finally {
     if (browser) {
@@ -101,7 +107,8 @@ function validateConfig() {
     'loginUsername',
     'loginPassword',
     'loginButton',
-    'targetButton',
+    'clockInButton',
+    'clockOutButton',
   ];
 
   const missingSelectors = requiredSelectors.filter(
@@ -121,40 +128,58 @@ function validateConfig() {
 function init() {
   try {
     console.log('='.repeat(60));
-    console.log('Clock Bot with Cron Scheduling');
+    console.log('Clock Bot with Dual Cron Scheduling');
     console.log('='.repeat(60));
     
     validateConfig();
 
-    console.log(`\nSchedule: ${config.cronSchedule}`);
+    console.log(`\nClock-In Schedule: ${config.schedules.clockIn}`);
+    console.log(`Clock-Out Schedule: ${config.schedules.clockOut}`);
     console.log(`Website: ${config.websiteUrl}`);
     console.log(`Username: ${config.username.substring(0, 3)}***`);
-    console.log('\nBot is running and waiting for scheduled time...');
+    console.log('\nBot is running and waiting for scheduled times...');
     console.log('Press Ctrl+C to stop.\n');
 
-    // Schedule the bot to run based on cron expression
-    const task = cron.schedule(config.cronSchedule, () => {
+    const tasks = [];
+
+    // Schedule clock-in task
+    const clockInTask = cron.schedule(config.schedules.clockIn, () => {
       console.log('\n' + '='.repeat(60));
-      console.log('Scheduled task triggered!');
+      console.log('Clock-In task triggered!');
       console.log('='.repeat(60));
-      runBot().catch(err => {
-        console.error('Failed to execute bot task:', err);
+      runBot(config.selectors.clockInButton, 'clock-in').catch(err => {
+        console.error('Failed to execute clock-in task:', err);
       });
     }, {
       scheduled: true,
       timezone: "Asia/Singapore" // Change this to your timezone
     });
+    tasks.push(clockInTask);
+
+    // Schedule clock-out task
+    const clockOutTask = cron.schedule(config.schedules.clockOut, () => {
+      console.log('\n' + '='.repeat(60));
+      console.log('Clock-Out task triggered!');
+      console.log('='.repeat(60));
+      runBot(config.selectors.clockOutButton, 'clock-out').catch(err => {
+        console.error('Failed to execute clock-out task:', err);
+      });
+    }, {
+      scheduled: true,
+      timezone: "Asia/Singapore" // Change this to your timezone
+    });
+    tasks.push(clockOutTask);
 
     // Handle graceful shutdown
     process.on('SIGINT', () => {
       console.log('\n\nStopping bot...');
-      task.stop();
+      tasks.forEach(task => task.stop());
       process.exit(0);
     });
 
     process.on('SIGTERM', () => {
       console.log('\n\nStopping bot...');
-      task.stop();
+      tasks.forEach(task => task.stop());
       process.exit(0);
     });
 
