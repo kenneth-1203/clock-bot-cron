@@ -13,6 +13,7 @@ const config = {
     loginButton: process.env.LOGIN_BUTTON_SELECTOR,
     clockInButton: process.env.CLOCK_IN_BUTTON_SELECTOR,
     clockOutButton: process.env.CLOCK_OUT_BUTTON_SELECTOR,
+    clockOutConfirmButton: process.env.CLOCK_OUT_CONFIRM_BUTTON_SELECTOR,
   },
   schedules: {
     clockIn: process.env.CLOCK_IN_SCHEDULE || '0 9 * * 1-5', // Default: 9 AM weekdays
@@ -71,8 +72,38 @@ async function runBot(buttonSelector, action = 'button click') {
     console.log(`[${new Date().toISOString()}] Clicking ${action} button...`);
     await page.click(buttonSelector);
 
-    // Wait a moment to ensure action is completed
-    await page.waitForTimeout(2000);
+    // Handle confirmation modal for clock-out
+    if (action === 'clock-out') {
+      console.log(`[${new Date().toISOString()}] Waiting for confirmation modal...`);
+      await page.waitForSelector(config.selectors.clockOutConfirmButton, { timeout: 5000 });
+      console.log(`[${new Date().toISOString()}] Clicking Yes on confirmation modal...`);
+      await page.click(config.selectors.clockOutConfirmButton);
+    }
+
+    // Wait and verify action is completed by checking button text change
+    if (action === 'clock-in') {
+      // Wait for button text to change to "Clock Out"
+      await page.waitForFunction(
+        (selector) => {
+          const element = document.querySelector(selector);
+          return element && element.innerText.includes('Clock Out');
+        },
+        { timeout: 5000 },
+        config.selectors.clockOutButton
+      );
+      console.log(`[${new Date().toISOString()}] Verified: Button changed to "Clock Out"`);
+    } else if (action === 'clock-out') {
+      // Wait for button text to change to "Clock In"
+      await page.waitForFunction(
+        (selector) => {
+          const element = document.querySelector(selector);
+          return element && element.innerText.includes('Clock In');
+        },
+        { timeout: 5000 },
+        config.selectors.clockInButton
+      );
+      console.log(`[${new Date().toISOString()}] Verified: Button changed to "Clock In"`);
+    }
 
     console.log(`[${new Date().toISOString()}] ${action} completed successfully!`);
 
@@ -141,6 +172,28 @@ function init() {
     console.log('Press Ctrl+C to stop.\n');
 
     const tasks = [];
+
+    // Function to log current date and time in Asia/Singapore timezone
+    function logDateTime() {
+      const currentTime = new Date().toLocaleString('en-SG', {
+        timeZone: 'Asia/Singapore',
+        dateStyle: 'full',
+        timeStyle: 'long'
+      });
+      console.log(`[${new Date().toISOString()}] Current time in Singapore: ${currentTime}`);
+    }
+
+    // Log immediately on startup
+    logDateTime();
+
+    // Schedule hourly date/time logging (at the start of every hour)
+    const hourlyLogTask = cron.schedule('0 * * * *', () => {
+      logDateTime();
+    }, {
+      scheduled: true,
+      timezone: "Asia/Singapore"
+    });
+    tasks.push(hourlyLogTask);
 
     // Schedule clock-in task
     const clockInTask = cron.schedule(config.schedules.clockIn, () => {
