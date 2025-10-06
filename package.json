@@ -1,0 +1,18 @@
+{
+  "name": "clock-bot-cron",
+  "version": "1.0.0",
+  "description": "Automated bot that logs into a website and clicks a button on a scheduled time (24/5 operation)",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node test.js"
+  },
+  "keywords": ["bot", "automation", "cron", "puppeteer", "scheduler"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "node-cron": "^4.2.1",
+    "puppeteer": "^24.23.0"
+  }
+}
