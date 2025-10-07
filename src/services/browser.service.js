@@ -34,7 +34,10 @@ class BrowserService {
    */
   async goto(url) {
     logger.step(`Navigating to ${url}...`);
-    await this.page.goto(url, { waitUntil: 'networkidle2' });
+    await this.page.goto(url, {
+      waitUntil: 'networkidle2',
+      timeout: 60000  // Increase timeout to 60 seconds for slow networks
+    });
   }
 
   /**
