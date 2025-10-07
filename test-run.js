@@ -10,35 +10,39 @@ const logger = require('./src/utils/logger');
 require('dotenv').config();
 
 async function testRun() {
-  logger.separator();
-  console.log('Testing Clock Bot - Running Clock-In and Clock-Out');
-  logger.separator();
+  logger.separator(60, '=');
+  logger.info('🧪 Testing Clock Bot - Running Clock-In and Clock-Out');
+  logger.separator(60, '=');
   console.log('');
 
   try {
     // Test clock-in
-    console.log('>>> Testing CLOCK-IN operation...\n');
+    logger.clockIn('>>> Testing CLOCK-IN operation...\n');
     await runBot('clock-in');
 
-    console.log('\n' + '-'.repeat(60));
-    console.log('Waiting 10 seconds before clock-out...');
-    console.log('-'.repeat(60) + '\n');
+    console.log('');
+    logger.separator(60, '-');
+    logger.step('⏳ Waiting 10 seconds before clock-out...');
+    logger.separator(60, '-');
+    console.log('');
     await new Promise(resolve => setTimeout(resolve, 10000));
 
     // Test clock-out
-    console.log('>>> Testing CLOCK-OUT operation...\n');
+    logger.clockOut('>>> Testing CLOCK-OUT operation...\n');
     await runBot('clock-out');
 
-    logger.separator();
-    console.log('✓ Test completed successfully!');
-    console.log('Both clock-in and clock-out operations worked correctly.');
-    logger.separator();
+    console.log('');
+    logger.separator(60, '=');
+    logger.success('✓ Test completed successfully!');
+    logger.info('Both clock-in and clock-out operations worked correctly.');
+    logger.separator(60, '=');
 
   } catch (error) {
-    console.error('\n' + '='.repeat(60));
-    console.error('✗ Test failed!');
-    console.error('Error:', error.message);
-    console.error('='.repeat(60));
+    console.log('');
+    logger.separator(60, '=');
+    logger.error('✗ Test failed!');
+    logger.error('Error:', error);
+    logger.separator(60, '=');
     process.exit(1);
   }
 }
