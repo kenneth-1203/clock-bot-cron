@@ -96,6 +96,14 @@ function login(message) {
 }
 
 /**
+ * Log a retry-related message
+ * @param {string} message - The message to log
+ */
+function retry(message) {
+  console.log(`[${getTimestamp()}] 🔄 ${message}`);
+}
+
+/**
  * Log a separator line
  * @param {number} [length=60] - Length of the separator
  * @param {string} [char='='] - Character to use for separator
@@ -147,6 +155,7 @@ module.exports = {
   browser,
   activity,
   login,
+  retry,
   separator,
   header,
   getTimestamp,

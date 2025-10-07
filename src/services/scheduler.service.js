@@ -11,6 +11,41 @@ class SchedulerService {
   }
 
   /**
+   * Execute a task with retry logic
+   * @param {Function} callback - Function to execute
+   * @param {string} taskName - Name of the task
+   * @param {number} attempt - Current attempt number
+   * @returns {Promise<void>}
+   * @private
+   */
+  async executeWithRetry(callback, taskName, attempt = 1) {
+    try {
+      await callback();
+      if (attempt > 1) {
+        logger.success(`${taskName} succeeded on retry attempt ${attempt}! ✨`);
+      }
+    } catch (err) {
+      logger.error(`Failed to execute ${taskName} (attempt ${attempt}/${this.config.retry.maxAttempts}):`, err);
+
+      // Check if we should retry
+      if (attempt < this.config.retry.maxAttempts) {
+        const delayMs = this.config.retry.delayMinutes * 60 * 1000;
+        const nextAttemptTime = new Date(Date.now() + delayMs);
+
+        logger.warn(`Scheduling retry ${attempt + 1} in ${this.config.retry.delayMinutes} minutes (at ${nextAttemptTime.toLocaleTimeString()})...`);
+
+        // Schedule the retry
+        setTimeout(() => {
+          logger.retry(`Retry attempt ${attempt + 1} for ${taskName}`);
+          this.executeWithRetry(callback, taskName, attempt + 1);
+        }, delayMs);
+      } else {
+        logger.error(`${taskName} failed after ${this.config.retry.maxAttempts} attempts. Giving up.`);
+      }
+    }
+  }
+
+  /**
    * Schedule a task to run on a cron schedule
    * @param {string} schedule - Cron schedule expression
    * @param {Function} callback - Function to execute on schedule
@@ -24,9 +59,7 @@ class SchedulerService {
         logger.separator();
         logger.info(`${taskName} triggered!`);
         logger.separator();
-        callback().catch(err => {
-          logger.error(`Failed to execute ${taskName}:`, err);
-        });
+        this.executeWithRetry(callback, taskName);
       },
       {
         scheduled: true,

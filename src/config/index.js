@@ -28,6 +28,10 @@ const config = {
     clockIn: process.env.CLOCK_IN_SCHEDULE || '0 9 * * 1-5', // Default: 9 AM weekdays
     clockOut: process.env.CLOCK_OUT_SCHEDULE || '0 18 * * 1-5', // Default: 6 PM weekdays
   },
+  retry: {
+    maxAttempts: parseInt(process.env.RETRY_MAX_ATTEMPTS || '3'),
+    delayMinutes: parseInt(process.env.RETRY_DELAY_MINUTES || '5'),
+  },
   browser: {
     headless: process.env.HEADLESS === 'true',
     viewport: {
