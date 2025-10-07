@@ -41,8 +41,8 @@ class ClockService {
 
     if (currentStatus.includes('Clock Out')) {
       logger.clockIn('Already clocked in (button shows "Clock Out")');
-      // Already clocked in, so we should still save activity
-      return { performed: false, shouldSaveActivity: true };
+      // Already clocked in, skip both clock-in and activity actions
+      return { performed: false, shouldSaveActivity: false };
     }
 
     await this.performClockAction(
