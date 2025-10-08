@@ -40,21 +40,12 @@ class BotService {
       await this.authService.login();
       const result = await clockOperation(this.clockService);
 
-      // Handle both old boolean return and new object return for backward compatibility
-      const shouldSaveActivity = typeof result === 'object' ? result.shouldSaveActivity : result;
-      const actionPerformed = typeof result === 'object' ? result.performed : result;
-
       // Check if we should save activity based on availability
       if (withActivity && this.activityService.isConfigured()) {
         // Check if activity is available on the page
         const isAvailable = await this.activityService.isAvailable();
 
-        if (isAvailable && shouldSaveActivity) {
-          if (!actionPerformed) {
-            logger.activity('Clock action already performed previously, but activity is available. Proceeding with save-activity...');
-          } else {
-            logger.activity('Activity is available. Proceeding with save-activity...');
-          }
+        if (isAvailable) {
           await this.activityService.saveActivity();
         } else if (!isAvailable) {
           logger.info('Save-activity skipped: activity already saved for today');

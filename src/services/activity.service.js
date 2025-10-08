@@ -90,13 +90,12 @@ class ActivityService {
       // Wait for the element to appear
       await this.browserService.waitForSelector(this.config.selectors.activityAvailability);
 
-      // Check if the element's text contains "available"
-      const hasAvailable = await this.browserService.getPage().evaluate((selector) => {
-        const element = document.querySelector(selector);
-        return element && element.textContent.toLowerCase().includes('available');
-      }, this.config.selectors.activityAvailability);
+      // Get the element's text and check if it contains "available"
+      const text = await this.browserService.getInnerText(this.config.selectors.activityAvailability);
+      const activity = text.match(/"([^"]*)"/g)?.[0]?.replaceAll('"', '') || 'N/A';
 
-      return hasAvailable;
+      logger.activity(`Activity for today: ${activity}`);
+      return activity.toLowerCase().includes('available')
     } catch (error) {
       logger.warn('Could not check activity availability:', error.message);
       return false;
