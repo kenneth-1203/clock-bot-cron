@@ -11,9 +11,12 @@ An automated bot that logs into a website and clicks buttons on scheduled times.
 - 📝 Detailed logging with emojis
 - 🌐 Headless browser support
 - 🏗️ Modular architecture for easy extension
-- 📋 Automatic activity saving after clock-in
+- 📋 Smart activity saving (only when available)
 - 🔄 Automatic retry on failure (3 attempts, 5 min apart)
 - ✅ Smart status detection (skips if already clocked in/out)
+- 🛡️ Anti-detection features (stealth mode)
+- ⏱️ Configurable timeouts for slow networks
+- 🐛 Debug logging for troubleshooting
 
 ## Table of Contents
 
@@ -90,10 +93,15 @@ ACTIVITY_NAVIGATION_BUTTON_SELECTOR="a[href='#activity']"
 ACTIVITY_PROJECT_ITEM_SELECTOR="option[value='21']"
 ACTIVITY_LIST_ITEM_SELECTOR="option[value='358']"
 ACTIVITY_SAVE_BUTTON_SELECTOR="input[value='Save']"
+ACTIVITY_AVAILABILITY_SELECTOR="span"  # Element to check if activity is available
 
 # Retry Configuration
 RETRY_MAX_ATTEMPTS=3        # Default: 3
 RETRY_DELAY_MINUTES=5       # Default: 5
+
+# Timeout Configuration (in milliseconds)
+SELECTOR_TIMEOUT=30000      # Default: 30000 (30 seconds)
+NAVIGATION_TIMEOUT=60000    # Default: 60000 (60 seconds)
 ```
 
 ### Finding CSS Selectors
@@ -164,9 +172,9 @@ Press `Ctrl+C` to gracefully stop the bot.
 
 ## Advanced Features
 
-### 📋 Save Activity (Automatic)
+### 📋 Save Activity (Smart & Automatic)
 
-The bot automatically saves your daily activity after clocking in.
+The bot intelligently saves your daily activity after clocking in, but only if activity is available.
 
 **Configuration:**
 ```env
@@ -174,15 +182,19 @@ ACTIVITY_NAVIGATION_BUTTON_SELECTOR="a[href='#activity']"
 ACTIVITY_PROJECT_ITEM_SELECTOR="option[value='21']"
 ACTIVITY_LIST_ITEM_SELECTOR="option[value='358']"
 ACTIVITY_SAVE_BUTTON_SELECTOR="input[value='Save']"
+ACTIVITY_AVAILABILITY_SELECTOR="span"  # Checks if text contains "available"
 ```
 
 **How it works:**
 1. Checks if already clocked in (reads button text)
 2. Clocks in if needed (or skips if already clocked in)
-3. Navigates to activity page
-4. Selects project from dropdown
-5. Selects activity from list
-6. Clicks save button
+3. **Checks if activity is available** by reading the element specified in `ACTIVITY_AVAILABILITY_SELECTOR`
+4. If element text contains "available" (case-insensitive):
+   - Navigates to activity page
+   - Selects project from dropdown
+   - Selects activity from list
+   - Clicks save button
+5. If not available, skips activity saving with message "activity already saved for today"
 
 **To disable:**
 - Leave the activity selectors empty in `.env`, or
@@ -192,9 +204,12 @@ ACTIVITY_SAVE_BUTTON_SELECTOR="input[value='Save']"
   ```
 
 **When it runs:**
-- After every successful clock-in operation
-- Even if you're already clocked in (button shows "Clock Out")
+- After clock-in operation (only if activity is available)
+- Skips if activity was already saved for today
 - Not after clock-out operations
+
+**Smart detection:**
+The bot reads an element on the page (e.g., `span`, `div`, etc.) and checks if it contains the word "available". This prevents saving duplicate activities.
 
 ### 🔄 Automatic Retry
 
@@ -246,8 +261,9 @@ The bot checks the current button state before performing actions:
 
 **For Clock-In:**
 - Reads button text
-- If button shows "Clock Out" → Already clocked in, skips clock-in BUT still saves activity
-- If button shows "Clock In" → Performs clock-in, then saves activity
+- If button shows "Clock Out" → Already clocked in, skips clock-in
+- If button shows "Clock In" → Performs clock-in
+- Then checks if activity is available before saving
 
 **For Clock-Out:**
 - Reads button text
@@ -257,8 +273,43 @@ The bot checks the current button state before performing actions:
 **Benefits:**
 - Prevents duplicate clock-in/out
 - Handles manual interventions gracefully
-- Still saves activity even if already clocked in
+- Only saves activity when available
 - Idempotent operations
+
+### 🛡️ Anti-Detection Features
+
+The bot includes stealth features to avoid detection by websites:
+
+**Features:**
+- `puppeteer-extra-plugin-stealth` - Masks automation signals
+- Realistic user agent (Chrome on Windows)
+- Disabled automation flags
+- Natural browser headers
+
+**Configuration:**
+Already enabled by default. All stealth features are automatic.
+
+### ⏱️ Configurable Timeouts
+
+Adjust timeouts for slow networks or VMs:
+
+**Configuration:**
+```env
+SELECTOR_TIMEOUT=30000      # Wait up to 30 seconds for elements (default)
+NAVIGATION_TIMEOUT=60000    # Wait up to 60 seconds for page loads (default)
+```
+
+**When to increase:**
+- Slow internet connection
+- Running in VM with limited resources
+- Website takes long to load
+- Frequent timeout errors
+
+**Example for very slow connections:**
+```env
+SELECTOR_TIMEOUT=60000      # 60 seconds
+NAVIGATION_TIMEOUT=120000   # 2 minutes
+```
 
 ## Architecture
 
@@ -343,8 +394,29 @@ Runs a complete clock-in and clock-out cycle to verify everything works.
 **Solution:**
 - Verify all activity selectors are correct
 - Check if selectors point to `<option>` elements in dropdowns
+- Verify `ACTIVITY_AVAILABILITY_SELECTOR` points to correct element
 - Test with `HEADLESS=false` to see the page
 - Ensure activity page loads after clock-in
+- Check if element text actually contains "available"
+
+### Selector timeout errors
+**Solution:**
+- Increase timeout values in `.env`:
+  ```env
+  SELECTOR_TIMEOUT=60000      # 60 seconds
+  NAVIGATION_TIMEOUT=120000   # 2 minutes
+  ```
+- Check debug logs for URL, page title, and available inputs
+- Verify selectors are correct
+- Test selectors in browser console first
+
+### Website blocks automated access
+**Solution:**
+- Anti-detection features are already enabled (stealth mode)
+- Try running with `HEADLESS=false` (some sites allow visible browsers)
+- Check if website has specific automation policies
+- Use VPN if IP is blocked
+- Contact website administrator if legitimate use
 
 ### Retries not working
 **Solution:**
@@ -588,14 +660,3 @@ For issues or questions:
 1. Check the [Troubleshooting](#troubleshooting) section
 2. Review the logs for error messages
 3. Open an issue on GitHub with logs and configuration (remove sensitive data!)
-
-## Changelog
-
-### Latest Version
-- ✨ Added automatic activity saving after clock-in
-- ✨ Added smart status detection (checks button state before action)
-- ✨ Added automatic retry logic (3 attempts, 5 min apart)
-- ✨ Added emoji-based logging for better readability
-- ✨ Refactored to modular architecture
-- ✨ Improved error handling and logging
-- ✨ Added dropdown selection support for activity forms
