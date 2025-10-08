@@ -44,16 +44,23 @@ class BotService {
       const shouldSaveActivity = typeof result === 'object' ? result.shouldSaveActivity : result;
       const actionPerformed = typeof result === 'object' ? result.performed : result;
 
-      // Save activity if requested, configured, and should save
-      if (withActivity && shouldSaveActivity && this.activityService.isConfigured()) {
-        if (!actionPerformed) {
-          logger.activity('Clock action already performed previously, proceeding with save-activity...');
-        } else {
-          logger.activity('Proceeding with save-activity...');
+      // Check if we should save activity based on availability
+      if (withActivity && this.activityService.isConfigured()) {
+        // Check if activity is available on the page
+        const isAvailable = await this.activityService.isAvailable();
+
+        if (isAvailable && shouldSaveActivity) {
+          if (!actionPerformed) {
+            logger.activity('Clock action already performed previously, but activity is available. Proceeding with save-activity...');
+          } else {
+            logger.activity('Activity is available. Proceeding with save-activity...');
+          }
+          await this.activityService.saveActivity();
+        } else if (!isAvailable) {
+          logger.info('Save-activity skipped: activity already saved for today');
+        } else if (!shouldSaveActivity) {
+          logger.info('Save-activity skipped: not applicable for this action');
         }
-        await this.activityService.saveActivity();
-      } else if (withActivity && !shouldSaveActivity) {
-        logger.info('Save-activity skipped: not applicable for this action');
       } else if (withActivity && !this.activityService.isConfigured()) {
         logger.warn('Save-activity skipped: not configured');
       }

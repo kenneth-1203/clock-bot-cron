@@ -23,6 +23,7 @@ const config = {
     activityProjectItem: process.env.ACTIVITY_PROJECT_ITEM_SELECTOR,
     activityListItem: process.env.ACTIVITY_LIST_ITEM_SELECTOR,
     activitySaveButton: process.env.ACTIVITY_SAVE_BUTTON_SELECTOR,
+    activityAvailability: process.env.ACTIVITY_AVAILABILITY_SELECTOR,
   },
   schedules: {
     clockIn: process.env.CLOCK_IN_SCHEDULE || '0 9 * * 1-5', // Default: 9 AM weekdays

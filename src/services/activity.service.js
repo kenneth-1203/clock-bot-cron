@@ -75,6 +75,33 @@ class ActivityService {
       this.config.selectors.activitySaveButton
     );
   }
+
+  /**
+   * Check if activity is available by checking if element text contains "available"
+   * @returns {Promise<boolean>}
+   */
+  async isAvailable() {
+    if (!this.config.selectors.activityAvailability) {
+      logger.warn('Activity availability selector not configured');
+      return false;
+    }
+
+    try {
+      // Wait for the element to appear
+      await this.browserService.waitForSelector(this.config.selectors.activityAvailability);
+
+      // Check if the element's text contains "available"
+      const hasAvailable = await this.browserService.getPage().evaluate((selector) => {
+        const element = document.querySelector(selector);
+        return element && element.textContent.toLowerCase().includes('available');
+      }, this.config.selectors.activityAvailability);
+
+      return hasAvailable;
+    } catch (error) {
+      logger.warn('Could not check activity availability:', error.message);
+      return false;
+    }
+  }
 }
 
 module.exports = ActivityService;
