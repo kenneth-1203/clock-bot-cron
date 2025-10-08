@@ -47,7 +47,31 @@ class BrowserService {
    * @returns {Promise<void>}
    */
   async waitForSelector(selector, timeout) {
-    await this.page.waitForSelector(selector, { timeout: timeout || this.config.timeout.selector });
+    try {
+      await this.page.waitForSelector(selector, { timeout: timeout || this.config.timeout.selector });
+    } catch (error) {
+      // Log debug information to help troubleshoot
+      const url = this.page.url();
+      const title = await this.page.title();
+      logger.error(`Failed to find selector: ${selector}`);
+      logger.error(`Current URL: ${url}`);
+      logger.error(`Page title: ${title}`);
+
+      // Check if selector exists in DOM
+      const exists = await this.page.evaluate((sel) => {
+        return !!document.querySelector(sel);
+      }, selector);
+      logger.error(`Selector exists in DOM: ${exists}`);
+
+      // Log all input fields on the page for debugging
+      const inputs = await this.page.evaluate(() => {
+        const fields = Array.from(document.querySelectorAll('input'));
+        return fields.map(f => ({ id: f.id, name: f.name, type: f.type }));
+      });
+      logger.error(`Available input fields: ${JSON.stringify(inputs, null, 2)}`);
+
+      throw error;
+    }
   }
 
   /**
