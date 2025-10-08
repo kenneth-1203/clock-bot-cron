@@ -39,6 +39,10 @@ const config = {
       height: 800,
     },
   },
+  timeout: {
+    selector: parseInt(process.env.SELECTOR_TIMEOUT || '30000'),
+    navigation: parseInt(process.env.NAVIGATION_TIMEOUT || '60000'),
+  },
   timezone: 'Asia/Singapore',
 };
 

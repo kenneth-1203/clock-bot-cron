@@ -36,18 +36,18 @@ class BrowserService {
     logger.step(`Navigating to ${url}...`);
     await this.page.goto(url, {
       waitUntil: 'networkidle2',
-      timeout: 60000  // Increase timeout to 60 seconds for slow networks
+      timeout: this.config.timeout.navigation
     });
   }
 
   /**
    * Wait for a selector to appear on the page
    * @param {string} selector - CSS selector to wait for
-   * @param {number} [timeout=10000] - Timeout in milliseconds
+   * @param {number} [timeout] - Timeout in milliseconds (defaults to config value)
    * @returns {Promise<void>}
    */
-  async waitForSelector(selector, timeout = 10000) {
-    await this.page.waitForSelector(selector, { timeout });
+  async waitForSelector(selector, timeout) {
+    await this.page.waitForSelector(selector, { timeout: timeout || this.config.timeout.selector });
   }
 
   /**
@@ -135,16 +135,16 @@ class BrowserService {
    * Wait for button text to change (used for verification)
    * @param {string} selector - CSS selector of the button
    * @param {string} expectedText - Expected text content
-   * @param {number} [timeout=5000] - Timeout in milliseconds
+   * @param {number} [timeout] - Timeout in milliseconds (defaults to config value)
    * @returns {Promise<void>}
    */
-  async waitForButtonTextChange(selector, expectedText, timeout = 5000) {
+  async waitForButtonTextChange(selector, expectedText, timeout) {
     await this.page.waitForFunction(
       (sel, text) => {
         const element = document.querySelector(sel);
         return element && element.innerText.includes(text);
       },
-      { timeout },
+      { timeout: timeout || this.config.timeout.selector },
       selector,
       expectedText
     );
