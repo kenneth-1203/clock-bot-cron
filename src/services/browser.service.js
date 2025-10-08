@@ -1,5 +1,9 @@
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-extra');
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const logger = require('../utils/logger');
+
+// Use stealth plugin to avoid detection
+puppeteer.use(StealthPlugin());
 
 /**
  * Service for managing browser instances and page interactions
@@ -19,11 +23,28 @@ class BrowserService {
     logger.browser('Launching browser...');
     this.browser = await puppeteer.launch({
       headless: this.config.browser.headless,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-blink-features=AutomationControlled',
+        '--disable-dev-shm-usage',
+      ],
     });
 
     this.page = await this.browser.newPage();
+
+    // Set a realistic user agent
+    await this.page.setUserAgent(
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    );
+
     await this.page.setViewport(this.config.browser.viewport);
+
+    // Set extra headers to look more like a real browser
+    await this.page.setExtraHTTPHeaders({
+      'Accept-Language': 'en-US,en;q=0.9',
+    });
+
     logger.success('Browser launched successfully');
   }
 

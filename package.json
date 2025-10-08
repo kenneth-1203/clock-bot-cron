@@ -8,12 +8,20 @@
     "test": "node test.js",
     "test-run": "node test-run.js"
   },
-  "keywords": ["bot", "automation", "cron", "puppeteer", "scheduler"],
+  "keywords": [
+    "bot",
+    "automation",
+    "cron",
+    "puppeteer",
+    "scheduler"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "dotenv": "^17.2.3",
     "node-cron": "^4.2.1",
-    "puppeteer": "^24.23.0"
+    "puppeteer": "^24.23.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
   }
 }
