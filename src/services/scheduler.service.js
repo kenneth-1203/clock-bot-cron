@@ -53,13 +53,27 @@ class SchedulerService {
    * @returns {Object} The scheduled task
    */
   scheduleTask(schedule, callback, taskName = 'Unnamed task') {
+    let isRunning = false;
+
     const task = cron.schedule(
       schedule,
       () => {
+        // Prevent overlapping executions
+        if (isRunning) {
+          logger.warn(`${taskName} is still running from previous execution, skipping this one`);
+          return;
+        }
+
         logger.separator();
         logger.info(`${taskName} triggered!`);
         logger.separator();
-        this.executeWithRetry(callback, taskName);
+
+        // Execute asynchronously without blocking the cron scheduler
+        isRunning = true;
+        Promise.resolve()
+          .then(() => this.executeWithRetry(callback, taskName))
+          .catch(err => logger.error(`Unhandled error in ${taskName}:`, err))
+          .finally(() => { isRunning = false; });
       },
       {
         scheduled: true,
