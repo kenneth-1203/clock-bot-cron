@@ -22,7 +22,7 @@ function init() {
 
     // Display feature flags
     logger.separator();
-    logger.info('Feature Flags:');
+    logger.log('🚩 Feature Flags:');
     logger.log(`${config.features.holidayDetection ? '✅' : '❌'} Should detect holidays`);
     logger.log(`${config.features.skipOnHolidays ? '✅' : '❌'} Should skip on holidays`);
     logger.log(`${config.features.skipOnAnnualLeaves ? '✅' : '❌'} Should skip on annual leaves`);
