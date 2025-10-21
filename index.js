@@ -19,6 +19,20 @@ function init() {
     logger.info(`Clock-Out Schedule: ${config.schedules.clockOut}`);
     logger.info(`Website: ${config.website.url}`);
     logger.info(`Username: ${config.credentials.username.substring(0, 3)}***`);
+
+    // Display holiday configuration
+    if (config.holiday.skipOnHoliday) {
+      const apiKey = config.holiday.googleApiKey;
+      if (apiKey) {
+        logger.success(`Holiday Detection: ENABLED (API key: ${apiKey.substring(0, 8)}...)`);
+      } else {
+        logger.warn('Holiday Detection: ENABLED but API key is missing!');
+        logger.warn('Add GOOGLE_CALENDAR_API_KEY to .env for holiday detection to work');
+      }
+    } else {
+      logger.info('Holiday Detection: DISABLED');
+    }
+
     logger.info('\nBot is running and waiting for scheduled times...');
     logger.info('Press Ctrl+C to stop.\n');
 
@@ -29,12 +43,13 @@ function init() {
     // Log current time on startup
     logger.logTimezone(config.timezone);
 
-    // Schedule hourly date/time logging
+    // Schedule hourly date/time logging (don't skip on holidays)
     schedulerService.scheduleHourly(
       async () => {
         logger.logTimezone(config.timezone);
       },
-      'Hourly time log'
+      'Hourly time log',
+      { skipOnHoliday: false }
     );
 
     // Schedule clock-in task
@@ -43,7 +58,8 @@ function init() {
       async () => {
         await botService.clockIn();
       },
-      'Clock-In task'
+      'Clock-In task',
+      { skipOnHoliday: config.holiday.skipOnHoliday }
     );
 
     // Schedule clock-out task
@@ -52,7 +68,8 @@ function init() {
       async () => {
         await botService.clockOut();
       },
-      'Clock-Out task'
+      'Clock-Out task',
+      { skipOnHoliday: config.holiday.skipOnHoliday }
     );
 
     // Handle graceful shutdown

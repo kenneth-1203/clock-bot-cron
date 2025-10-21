@@ -104,6 +104,16 @@ function retry(message) {
 }
 
 /**
+ * Log a debug message (only if DEBUG env var is set)
+ * @param {string} message - The debug message to log
+ */
+function debug(message) {
+  if (process.env.DEBUG === 'true') {
+    console.log(`[${getTimestamp()}] 🐛 ${message}`);
+  }
+}
+
+/**
  * Log a separator line
  * @param {number} [length=60] - Length of the separator
  * @param {string} [char='='] - Character to use for separator
@@ -156,6 +166,7 @@ module.exports = {
   activity,
   login,
   retry,
+  debug,
   separator,
   header,
   getTimestamp,

@@ -17,6 +17,8 @@ An automated bot that logs into a website and clicks buttons on scheduled times.
 - 🛡️ Anti-detection features (stealth mode)
 - ⏱️ Configurable timeouts for slow networks
 - 🐛 Debug logging for troubleshooting
+- 🎉 Automatic holiday detection (Malaysia public holidays)
+- 📅 Smart scheduling (skips weekends and public holidays)
 
 ## Table of Contents
 
@@ -102,6 +104,10 @@ RETRY_DELAY_MINUTES=5       # Default: 5
 # Timeout Configuration (in milliseconds)
 SELECTOR_TIMEOUT=30000      # Default: 30000 (30 seconds)
 NAVIGATION_TIMEOUT=60000    # Default: 60000 (60 seconds)
+
+# Holiday Configuration
+SKIP_ON_HOLIDAY=true        # Default: true (skip tasks on public holidays)
+HOLIDAY_COUNTRY=malaysia    # Default: malaysia
 ```
 
 ### Finding CSS Selectors
@@ -171,6 +177,79 @@ npm run test-run
 Press `Ctrl+C` to gracefully stop the bot.
 
 ## Advanced Features
+
+### 🎉 Holiday Detection & Smart Scheduling
+
+The bot automatically fetches Malaysian public holidays from Google Calendar and skips scheduled tasks on holidays and weekends.
+
+**How it works:**
+1. Fetches public holidays from Google Calendar API using your API key
+2. Caches holiday data for 24 hours to minimize API calls
+3. Before each scheduled task, checks if today is:
+   - A weekend (Saturday or Sunday)
+   - A Malaysian public holiday
+4. If yes, skips the task with a friendly log message
+5. If no, proceeds with the scheduled operation
+
+**Setup:**
+
+1. Get a free Google Calendar API key:
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project (or select existing)
+   - Enable the "Google Calendar API"
+   - Go to "Credentials" → "Create Credentials" → "API Key"
+   - Copy your API key
+
+2. Add to your `.env` file:
+```env
+# Skip tasks on public holidays and weekends (default: true)
+SKIP_ON_HOLIDAY=true
+
+# Country for holiday calendar (currently supports Malaysia)
+HOLIDAY_COUNTRY=malaysia
+
+# Google Calendar API key (required for holiday detection)
+GOOGLE_CALENDAR_API_KEY=your_api_key_here
+```
+
+**Optional: Restrict your API key** (recommended for security):
+   - In Google Cloud Console, click on your API key
+   - Under "API restrictions", select "Restrict key"
+   - Choose "Google Calendar API" only
+   - Save changes
+
+**Example log output:**
+```
+============================================================
+[2025-10-09T10:00:00.000Z] ℹ️  Clock-In task triggered!
+============================================================
+[2025-10-09T10:00:00.100Z] ⏭️  Skipping Clock-In task - Public Holiday: Maulidur Rasul (2025-10-09)
+[2025-10-09T10:00:00.100Z] 🎉 Holiday: Maulidur Rasul
+============================================================
+```
+
+**Weekend example:**
+```
+============================================================
+[2025-10-11T10:00:00.000Z] ℹ️  Clock-In task triggered!
+============================================================
+[2025-10-11T10:00:00.100Z] ⏭️  Skipping Clock-In task - Weekend (2025-10-11)
+============================================================
+```
+
+**Benefits:**
+- ✅ No need to manually update holiday schedules
+- ✅ Automatically stays current with official Malaysian public holidays
+- ✅ Prevents accidental clock-ins on holidays
+- ✅ Works offline using 24-hour cache
+- ✅ Graceful fallback if holiday check fails (proceeds with task)
+
+**To disable:**
+```env
+SKIP_ON_HOLIDAY=false
+```
+
+**Note:** The hourly time logging task runs even on holidays to maintain system health monitoring.
 
 ### 📋 Save Activity (Smart & Automatic)
 
@@ -325,6 +404,7 @@ src/
 │   ├── bot.service.js        # Main orchestrator
 │   ├── browser.service.js    # Browser automation
 │   ├── clock.service.js      # Clock-in/out operations
+│   ├── holiday.service.js    # Holiday detection & checking
 │   └── scheduler.service.js  # Cron job management
 └── utils/
     ├── constants.js          # Application constants
@@ -338,7 +418,8 @@ src/
 - **AuthService**: Handles login operations
 - **ClockService**: Performs clock-in/out actions with status detection
 - **ActivityService**: Saves daily activity
-- **SchedulerService**: Manages cron scheduling with retry logic
+- **HolidayService**: Fetches and checks Malaysian public holidays
+- **SchedulerService**: Manages cron scheduling with retry logic and holiday checking
 
 **Benefits:**
 - Easy to test individual components

@@ -1,5 +1,6 @@
 const cron = require('node-cron');
 const logger = require('../utils/logger');
+const HolidayService = require('./holiday.service');
 
 /**
  * Service for managing cron job scheduling
@@ -8,6 +9,7 @@ class SchedulerService {
   constructor(config) {
     this.config = config;
     this.tasks = [];
+    this.holidayService = new HolidayService(config);
   }
 
   /**
@@ -50,14 +52,17 @@ class SchedulerService {
    * @param {string} schedule - Cron schedule expression
    * @param {Function} callback - Function to execute on schedule
    * @param {string} [taskName] - Optional name for the task
+   * @param {Object} [options] - Additional options
+   * @param {boolean} [options.skipOnHoliday=true] - Skip task on public holidays
    * @returns {Object} The scheduled task
    */
-  scheduleTask(schedule, callback, taskName = 'Unnamed task') {
+  scheduleTask(schedule, callback, taskName = 'Unnamed task', options = {}) {
+    const { skipOnHoliday = true } = options;
     let isRunning = false;
 
     const task = cron.schedule(
       schedule,
-      () => {
+      async () => {
         // Prevent overlapping executions
         if (isRunning) {
           logger.warn(`${taskName} is still running from previous execution, skipping this one`);
@@ -67,6 +72,22 @@ class SchedulerService {
         logger.separator();
         logger.info(`${taskName} triggered!`);
         logger.separator();
+
+        // Check if task should be skipped due to holidays/weekends
+        if (skipOnHoliday) {
+          const skipCheck = await this.holidayService.shouldSkipTask();
+
+          if (skipCheck.shouldSkip) {
+            logger.info(`⏭️  Skipping ${taskName} - ${skipCheck.reason} (${skipCheck.date})`);
+            if (skipCheck.holiday) {
+              logger.info(`🎉 Holiday: ${skipCheck.holiday.summary}`);
+            }
+            logger.separator();
+            return;
+          } else {
+            logger.info(`✅ ${skipCheck.reason} - proceeding with task`);
+          }
+        }
 
         // Execute asynchronously without blocking the cron scheduler
         isRunning = true;
@@ -89,10 +110,11 @@ class SchedulerService {
    * Schedule an hourly task
    * @param {Function} callback - Function to execute hourly
    * @param {string} [taskName] - Optional name for the task
+   * @param {Object} [options] - Additional options
    * @returns {Object} The scheduled task
    */
-  scheduleHourly(callback, taskName = 'Hourly task') {
-    return this.scheduleTask('0 * * * *', callback, taskName);
+  scheduleHourly(callback, taskName = 'Hourly task', options = {}) {
+    return this.scheduleTask('0 * * * *', callback, taskName, options);
   }
 
   /**
@@ -110,6 +132,14 @@ class SchedulerService {
    */
   getTaskCount() {
     return this.tasks.length;
+  }
+
+  /**
+   * Get the holiday service instance
+   * @returns {HolidayService} The holiday service
+   */
+  getHolidayService() {
+    return this.holidayService;
   }
 }
 

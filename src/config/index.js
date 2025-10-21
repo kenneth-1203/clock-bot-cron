@@ -45,6 +45,11 @@ const config = {
     navigation: parseInt(process.env.NAVIGATION_TIMEOUT || '60000'),
   },
   timezone: 'Asia/Singapore',
+  holiday: {
+    skipOnHoliday: process.env.SKIP_ON_HOLIDAY !== 'false', // Default: true
+    country: process.env.HOLIDAY_COUNTRY || 'malaysia',
+    googleApiKey: process.env.GOOGLE_CALENDAR_API_KEY, // Optional: Google Calendar API key
+  },
 };
 
 /**
