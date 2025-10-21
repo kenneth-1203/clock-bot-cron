@@ -14,6 +14,14 @@ function getTimestamp() {
  * Log an info message with timestamp
  * @param {string} message - The message to log
  */
+function log(message) {
+  console.log(`[${getTimestamp()}] ${message}`);
+}
+
+/**
+ * Log an info message with timestamp
+ * @param {string} message - The message to log
+ */
 function info(message) {
   console.log(`[${getTimestamp()}] ℹ️  ${message}`);
 }
@@ -155,6 +163,7 @@ function logTimezone(timezone) {
 }
 
 module.exports = {
+  log,
   info,
   success,
   warn,

@@ -23,11 +23,11 @@ function init() {
     // Display feature flags
     logger.separator();
     logger.info('Feature Flags:');
-    logger.info(`  ${config.features.holidayDetection ? '✅' : '❌'} Should detect holidays`);
-    logger.info(`  ${config.features.skipOnHolidays ? '✅' : '❌'} Should skip on holidays`);
-    logger.info(`  ${config.features.skipOnAnnualLeaves ? '✅' : '❌'} Should skip on annual leaves`);
-    logger.info(`  ${config.features.saveActivity ? '✅' : '❌'} Should save activity`);
-    logger.info(`  ${config.features.retryMechanism ? '✅' : '❌'} Should retry on failure`);
+    logger.log(`${config.features.holidayDetection ? '✅' : '❌'} Should detect holidays`);
+    logger.log(`${config.features.skipOnHolidays ? '✅' : '❌'} Should skip on holidays`);
+    logger.log(`${config.features.skipOnAnnualLeaves ? '✅' : '❌'} Should skip on annual leaves`);
+    logger.log(`${config.features.saveActivity ? '✅' : '❌'} Should save activity`);
+    logger.log(`${config.features.retryMechanism ? '✅' : '❌'} Should retry on failure`);
 
     // Display holiday configuration
     if (config.features.holidayDetection) {
