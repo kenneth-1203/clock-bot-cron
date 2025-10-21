@@ -42,7 +42,6 @@ function init() {
       logger.info('Holiday Detection: DISABLED');
     }
 
-    logger.info('\nBot is running and waiting for scheduled times...');
     logger.info('Press Ctrl+C to stop.\n');
 
     // Initialize services
