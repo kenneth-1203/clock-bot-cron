@@ -4,8 +4,8 @@
  * Run with: npm run test-run
  */
 
-const { runBot } = require('./index');
-const logger = require('./src/utils/logger');
+const { runBot } = require('../../index');
+const logger = require('../utils/logger');
 
 require('dotenv').config();
 

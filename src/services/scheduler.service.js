@@ -1,6 +1,7 @@
 const cron = require('node-cron');
 const logger = require('../utils/logger');
 const HolidayService = require('./holiday.service');
+const AnnualLeavesService = require('./annual-leaves.service');
 
 /**
  * Service for managing cron job scheduling
@@ -10,6 +11,14 @@ class SchedulerService {
     this.config = config;
     this.tasks = [];
     this.holidayService = new HolidayService(config);
+    // Initialize annual leaves service with config path
+    const annualLeavesModule = require('./annual-leaves.service');
+    if (!annualLeavesModule.filePath) {
+      // Create new instance with configured path if not already initialized
+      this.annualLeavesService = new (require('./annual-leaves.service').constructor)(config.annualLeaves?.filePath);
+    } else {
+      this.annualLeavesService = annualLeavesModule;
+    }
   }
 
   /**
@@ -29,8 +38,8 @@ class SchedulerService {
     } catch (err) {
       logger.error(`Failed to execute ${taskName} (attempt ${attempt}/${this.config.retry.maxAttempts}):`, err);
 
-      // Check if we should retry
-      if (attempt < this.config.retry.maxAttempts) {
+      // Check if retry mechanism is enabled and if we should retry
+      if (this.config.features.retryMechanism && attempt < this.config.retry.maxAttempts) {
         const delayMs = this.config.retry.delayMinutes * 60 * 1000;
         const nextAttemptTime = new Date(Date.now() + delayMs);
 
@@ -41,6 +50,8 @@ class SchedulerService {
           logger.retry(`Retry attempt ${attempt + 1} for ${taskName}`);
           this.executeWithRetry(callback, taskName, attempt + 1);
         }, delayMs);
+      } else if (!this.config.features.retryMechanism) {
+        logger.warn(`Retry mechanism is disabled. ${taskName} will not be retried.`);
       } else {
         logger.error(`${taskName} failed after ${this.config.retry.maxAttempts} attempts. Giving up.`);
       }
@@ -73,19 +84,34 @@ class SchedulerService {
         logger.info(`${taskName} triggered!`);
         logger.separator();
 
-        // Check if task should be skipped due to holidays/weekends
+        // Check if task should be skipped due to holidays/weekends or annual leaves
         if (skipOnHoliday) {
-          const skipCheck = await this.holidayService.shouldSkipTask();
-
-          if (skipCheck.shouldSkip) {
-            logger.info(`⏭️  Skipping ${taskName} - ${skipCheck.reason} (${skipCheck.date})`);
-            if (skipCheck.holiday) {
-              logger.info(`🎉 Holiday: ${skipCheck.holiday.summary}`);
+          // Check annual leaves first (if feature is enabled)
+          if (this.config.features.skipOnAnnualLeaves) {
+            const annualLeaveCheck = this.annualLeavesService.shouldSkipTask(new Date());
+            if (annualLeaveCheck.shouldSkip) {
+              logger.info(`⏭️  Skipping ${taskName} - ${annualLeaveCheck.reason} (${annualLeaveCheck.date})`);
+              if (annualLeaveCheck.leave) {
+                logger.info(`📅 Leave Type: ${annualLeaveCheck.leave.type}`);
+              }
+              logger.separator();
+              return;
             }
-            logger.separator();
-            return;
-          } else {
-            logger.info(`✅ ${skipCheck.reason} - proceeding with task`);
+          }
+
+          // Then check holidays (if feature is enabled)
+          if (this.config.features.skipOnHolidays) {
+            const holidayCheck = await this.holidayService.shouldSkipTask();
+            if (holidayCheck.shouldSkip) {
+              logger.info(`⏭️  Skipping ${taskName} - ${holidayCheck.reason} (${holidayCheck.date})`);
+              if (holidayCheck.holiday) {
+                logger.info(`🎉 Holiday: ${holidayCheck.holiday.summary}`);
+              }
+              logger.separator();
+              return;
+            } else {
+              logger.info(`✅ ${holidayCheck.reason} - proceeding with task`);
+            }
           }
         }
 

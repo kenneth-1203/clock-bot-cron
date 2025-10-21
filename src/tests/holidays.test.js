@@ -1,6 +1,6 @@
-const { config } = require('./src/config');
-const HolidayService = require('./src/services/holiday.service');
-const logger = require('./src/utils/logger');
+const { config } = require('../config');
+const HolidayService = require('../services/holiday.service');
+const logger = require('../utils/logger');
 
 /**
  * Test the holiday service

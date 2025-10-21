@@ -4,6 +4,13 @@ require('dotenv').config();
  * Application configuration loaded from environment variables
  */
 const config = {
+  features: {
+    holidayDetection: process.env.FEATURE_HOLIDAY_DETECTION !== 'false', // Default: true
+    retryMechanism: process.env.FEATURE_RETRY_MECHANISM !== 'false', // Default: true
+    saveActivity: process.env.FEATURE_SAVE_ACTIVITY !== 'false', // Default: true
+    skipOnHolidays: process.env.FEATURE_SKIP_ON_HOLIDAYS !== 'false', // Default: true
+    skipOnAnnualLeaves: process.env.FEATURE_SKIP_ON_ANNUAL_LEAVES !== 'false', // Default: true
+  },
   website: {
     url: process.env.WEBSITE_URL,
   },
@@ -46,9 +53,11 @@ const config = {
   },
   timezone: 'Asia/Singapore',
   holiday: {
-    skipOnHoliday: process.env.SKIP_ON_HOLIDAY !== 'false', // Default: true
     country: process.env.HOLIDAY_COUNTRY || 'malaysia',
     googleApiKey: process.env.GOOGLE_CALENDAR_API_KEY, // Optional: Google Calendar API key
+  },
+  annualLeaves: {
+    filePath: process.env.ANNUAL_LEAVES_FILE_PATH || './annual-leaves.json', // Path to annual leaves JSON file
   },
 };
 

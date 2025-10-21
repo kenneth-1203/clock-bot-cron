@@ -20,8 +20,17 @@ function init() {
     logger.info(`Website: ${config.website.url}`);
     logger.info(`Username: ${config.credentials.username.substring(0, 3)}***`);
 
+    // Display feature flags
+    logger.separator();
+    logger.info('Feature Flags:');
+    logger.info(`  ${config.features.holidayDetection ? '✅' : '❌'} Should detect holidays`);
+    logger.info(`  ${config.features.skipOnHolidays ? '✅' : '❌'} Should skip on holidays`);
+    logger.info(`  ${config.features.skipOnAnnualLeaves ? '✅' : '❌'} Should skip on annual leaves`);
+    logger.info(`  ${config.features.saveActivity ? '✅' : '❌'} Should save activity`);
+    logger.info(`  ${config.features.retryMechanism ? '✅' : '❌'} Should retry on failure`);
+
     // Display holiday configuration
-    if (config.holiday.skipOnHoliday) {
+    if (config.features.holidayDetection) {
       const apiKey = config.holiday.googleApiKey;
       if (apiKey) {
         logger.success(`Holiday Detection: ENABLED (API key: ${apiKey.substring(0, 8)}...)`);
@@ -59,7 +68,7 @@ function init() {
         await botService.clockIn();
       },
       'Clock-In task',
-      { skipOnHoliday: config.holiday.skipOnHoliday }
+      { skipOnHoliday: true }
     );
 
     // Schedule clock-out task
@@ -69,7 +78,7 @@ function init() {
         await botService.clockOut();
       },
       'Clock-Out task',
-      { skipOnHoliday: config.holiday.skipOnHoliday }
+      { skipOnHoliday: true }
     );
 
     // Handle graceful shutdown

@@ -3,8 +3,8 @@
  * Run with: npm test
  */
 
-const { validateConfig } = require('./src/config');
-const logger = require('./src/utils/logger');
+const { validateConfig } = require('../config');
+const logger = require('../utils/logger');
 
 require('dotenv').config();
 

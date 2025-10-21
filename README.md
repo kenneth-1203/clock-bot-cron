@@ -19,6 +19,7 @@ An automated bot that logs into a website and clicks buttons on scheduled times.
 - 🐛 Debug logging for troubleshooting
 - 🎉 Automatic holiday detection (Malaysia public holidays)
 - 📅 Smart scheduling (skips weekends and public holidays)
+- 🏖️ Annual leaves tracking (easily manage your leave dates)
 
 ## Table of Contents
 
@@ -58,6 +59,31 @@ cp .env.example .env
 4. Configure your `.env` file with your website details (see [Configuration](#configuration) section)
 
 ## Configuration
+
+### Feature Flags
+
+Control which features are enabled or disabled:
+
+```env
+# Enable/disable holiday detection and skipping
+FEATURE_HOLIDAY_DETECTION=true        # Fetch holidays from Google Calendar (default: true)
+FEATURE_SKIP_ON_HOLIDAYS=true         # Skip tasks on public holidays (default: true)
+
+# Enable/disable annual leaves
+FEATURE_SKIP_ON_ANNUAL_LEAVES=true    # Skip tasks on annual leaves (default: true)
+
+# Enable/disable activity saving after clock-in
+FEATURE_SAVE_ACTIVITY=true            # Save activity after clock-in (default: true)
+
+# Enable/disable automatic retry mechanism
+FEATURE_RETRY_MECHANISM=true          # Retry failed tasks (default: true)
+```
+
+**Benefits:**
+- ✅ Toggle features without restarting code
+- ✅ Easy A/B testing different configurations
+- ✅ Disable problematic features temporarily
+- ✅ Performance tuning by disabling unused features
 
 ### Required Settings
 
@@ -106,8 +132,12 @@ SELECTOR_TIMEOUT=30000      # Default: 30000 (30 seconds)
 NAVIGATION_TIMEOUT=60000    # Default: 60000 (60 seconds)
 
 # Holiday Configuration
-SKIP_ON_HOLIDAY=true        # Default: true (skip tasks on public holidays)
 HOLIDAY_COUNTRY=malaysia    # Default: malaysia
+# Google Calendar API key (required for holiday detection)
+GOOGLE_CALENDAR_API_KEY=your_google_api_key_here
+
+# Annual Leaves Configuration
+ANNUAL_LEAVES_FILE_PATH=./annual-leaves.json  # Path to annual leaves JSON file (default: ./annual-leaves.json)
 ```
 
 ### Finding CSS Selectors
@@ -178,6 +208,62 @@ Press `Ctrl+C` to gracefully stop the bot.
 
 ## Advanced Features
 
+### 🎛️ Feature Flags
+
+Control which features are enabled for your specific use case. All feature flags default to `true` for convenience, but can be disabled if needed.
+
+**Available Feature Flags:**
+
+| Flag | Default | Purpose |
+|------|---------|---------|
+| `FEATURE_HOLIDAY_DETECTION` | `true` | Enable/disable fetching from Google Calendar API |
+| `FEATURE_SKIP_ON_HOLIDAYS` | `true` | Skip tasks on public holidays and weekends |
+| `FEATURE_SKIP_ON_ANNUAL_LEAVES` | `true` | Skip tasks on annual leave dates |
+| `FEATURE_SAVE_ACTIVITY` | `true` | Save activity after clock-in |
+| `FEATURE_RETRY_MECHANISM` | `true` | Automatically retry failed tasks |
+
+**Use Cases:**
+
+1. **Disable holidays during testing:**
+   ```env
+   FEATURE_SKIP_ON_HOLIDAYS=false
+   ```
+
+2. **Disable retries for quick feedback:**
+   ```env
+   FEATURE_RETRY_MECHANISM=false
+   ```
+
+3. **Disable activity saving temporarily:**
+   ```env
+   FEATURE_SAVE_ACTIVITY=false
+   ```
+
+4. **Run on all days (including weekends):**
+   ```env
+   FEATURE_SKIP_ON_HOLIDAYS=false
+   ```
+
+**Example Configuration - Minimal Mode:**
+```env
+# Disable all features except core clock-in/out
+FEATURE_HOLIDAY_DETECTION=false
+FEATURE_SKIP_ON_HOLIDAYS=false
+FEATURE_SKIP_ON_ANNUAL_LEAVES=false
+FEATURE_SAVE_ACTIVITY=false
+FEATURE_RETRY_MECHANISM=true
+```
+
+**Example Configuration - Full Features:**
+```env
+# Enable all features for maximum automation
+FEATURE_HOLIDAY_DETECTION=true
+FEATURE_SKIP_ON_HOLIDAYS=true
+FEATURE_SKIP_ON_ANNUAL_LEAVES=true
+FEATURE_SAVE_ACTIVITY=true
+FEATURE_RETRY_MECHANISM=true
+```
+
 ### 🎉 Holiday Detection & Smart Scheduling
 
 The bot automatically fetches Malaysian public holidays from Google Calendar and skips scheduled tasks on holidays and weekends.
@@ -202,8 +288,11 @@ The bot automatically fetches Malaysian public holidays from Google Calendar and
 
 2. Add to your `.env` file:
 ```env
+# Enable holiday detection (default: true)
+FEATURE_HOLIDAY_DETECTION=true
+
 # Skip tasks on public holidays and weekends (default: true)
-SKIP_ON_HOLIDAY=true
+FEATURE_SKIP_ON_HOLIDAYS=true
 
 # Country for holiday calendar (currently supports Malaysia)
 HOLIDAY_COUNTRY=malaysia
@@ -246,10 +335,98 @@ GOOGLE_CALENDAR_API_KEY=your_api_key_here
 
 **To disable:**
 ```env
-SKIP_ON_HOLIDAY=false
+FEATURE_SKIP_ON_HOLIDAYS=false
 ```
 
 **Note:** The hourly time logging task runs even on holidays to maintain system health monitoring.
+
+### 🏖️ Annual Leaves Management
+
+Easily manage your personal annual leave dates with a simple JSON file. The bot automatically skips scheduled tasks on your leave days.
+
+**How it works:**
+1. Maintains a `annual-leaves.json` file with your leave dates
+2. Before each scheduled task, checks if today is marked as leave
+3. If yes, skips the task with a friendly log message
+4. Works alongside holiday detection - skips if EITHER holiday OR leave
+
+**Setup:**
+
+1. Create or edit `annual-leaves.json` in the root directory:
+```json
+{
+  "leaves": [
+    {
+      "startDate": "2025-01-15",
+      "endDate": "2025-01-16",
+      "type": "annual",
+      "reason": "Personal leave"
+    },
+    {
+      "startDate": "2025-02-10",
+      "endDate": "2025-02-14",
+      "type": "annual",
+      "reason": "Vacation"
+    }
+  ]
+}
+```
+
+2. (Optional) Configure the file path in `.env`:
+```env
+ANNUAL_LEAVES_FILE_PATH=./annual-leaves.json  # Default: ./annual-leaves.json
+```
+
+**Date format:** Use `YYYY-MM-DD` format (ISO 8601 standard) for both `startDate` and `endDate`. Dates are inclusive - all days from `startDate` to `endDate` are marked as leave.
+
+**Example log output:**
+```
+============================================================
+[2025-01-15T09:00:00.000Z] ℹ️  Clock-In task triggered!
+============================================================
+[2025-01-15T09:00:00.100Z] ⏭️  Skipping Clock-In task - Annual leave (Personal leave) (2025-01-15)
+[2025-01-15T09:00:00.100Z] 📅 Leave Type: annual
+============================================================
+```
+
+**Features:**
+- ✅ Easy to update - just edit the JSON file
+- ✅ Version controlled - track your leave history
+- ✅ No API calls needed - works offline
+- ✅ Cached for 1 hour - minimal file I/O
+- ✅ Supports multiple leave entries
+- ✅ Reason field for documentation
+- ✅ Works alongside holiday detection
+
+**To disable:**
+- Delete or empty the `annual-leaves.json` file, or
+- Remove all entries from the `leaves` array, or
+- Set feature flag to disable:
+  ```env
+  FEATURE_SKIP_ON_ANNUAL_LEAVES=false
+  ```
+
+**Adding/Removing leaves programmatically:**
+
+You can also manage leaves through the service (for future development):
+```javascript
+const AnnualLeavesService = require('./src/services/annual-leaves.service');
+
+// Add a leave with date range
+AnnualLeavesService.addLeave('2025-03-15', '2025-03-20', 'Conference');
+
+// Remove a leave (by startDate)
+AnnualLeavesService.removeLeave('2025-03-15');
+
+// Check if specific date is within a leave
+const isLeave = AnnualLeavesService.isAnnualLeave('2025-03-17'); // true if within any leave range
+
+// Get leave details for a specific date
+const details = AnnualLeavesService.getLeaveDetails('2025-03-17');
+
+// Get upcoming leaves in next 30 days
+const upcoming = AnnualLeavesService.getUpcomingLeaves(30);
+```
 
 ### 📋 Save Activity (Smart & Automatic)
 
@@ -280,6 +457,10 @@ ACTIVITY_AVAILABILITY_SELECTOR="span"  # Checks if text contains "available"
 - Pass `false` to `clockIn()` method:
   ```javascript
   await botService.clockIn(false);
+  ```
+- Or disable via feature flag:
+  ```env
+  FEATURE_SAVE_ACTIVITY=false
   ```
 
 **When it runs:**
@@ -329,9 +510,14 @@ Result: Clocked in at 9:10 AM (10 minutes late, but successful)
 - ❌ Website structure changed
 - ❌ Configuration errors
 
-**Disabling retries:**
+**Disabling retries via config:**
 ```env
 RETRY_MAX_ATTEMPTS=1
+```
+
+**Disabling retries via feature flag (recommended):**
+```env
+FEATURE_RETRY_MECHANISM=false
 ```
 
 ### ✅ Smart Status Detection
@@ -400,6 +586,7 @@ src/
 │   └── index.js              # Configuration management
 ├── services/
 │   ├── activity.service.js   # Save activity operations
+│   ├── annual-leaves.service.js # Annual leaves management
 │   ├── auth.service.js       # Authentication/login
 │   ├── bot.service.js        # Main orchestrator
 │   ├── browser.service.js    # Browser automation
@@ -419,7 +606,8 @@ src/
 - **ClockService**: Performs clock-in/out actions with status detection
 - **ActivityService**: Saves daily activity
 - **HolidayService**: Fetches and checks Malaysian public holidays
-- **SchedulerService**: Manages cron scheduling with retry logic and holiday checking
+- **AnnualLeavesService**: Manages annual leave dates from JSON file
+- **SchedulerService**: Manages cron scheduling with retry logic and both holiday and leave checking
 
 **Benefits:**
 - Easy to test individual components

@@ -5,9 +5,10 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "node test.js",
-    "test-run": "node test-run.js",
-    "test-holiday": "node test-holiday.js"
+    "test": "node src/tests/bot.test.js",
+    "test-run": "node src/tests/run.test.js",
+    "test-holiday": "node src/tests/holidays.test.js",
+    "test-annual-leaves": "node src/tests/annual-leaves.test.js"
   },
   "keywords": [
     "bot",

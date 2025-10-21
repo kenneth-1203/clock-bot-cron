@@ -40,8 +40,8 @@ class BotService {
       await this.authService.login();
       const result = await clockOperation(this.clockService);
 
-      // Check if we should save activity based on availability
-      if (withActivity && this.activityService.isConfigured()) {
+      // Check if we should save activity based on availability and feature flag
+      if (this.config.features.saveActivity && withActivity && this.activityService.isConfigured()) {
         // Check if activity is available on the page
         const isAvailable = await this.activityService.isAvailable();
 
@@ -52,6 +52,8 @@ class BotService {
         } else if (!shouldSaveActivity) {
           logger.info('Save-activity skipped: not applicable for this action');
         }
+      } else if (withActivity && !this.config.features.saveActivity) {
+        logger.warn('Save-activity skipped: feature is disabled');
       } else if (withActivity && !this.activityService.isConfigured()) {
         logger.warn('Save-activity skipped: not configured');
       }
