@@ -48,18 +48,6 @@ function init() {
     const botService = new BotService(config);
     const schedulerService = new SchedulerService(config);
 
-    // Log current time on startup
-    logger.logTimezone(config.timezone);
-
-    // Schedule hourly date/time logging (don't skip on holidays)
-    schedulerService.scheduleHourly(
-      async () => {
-        logger.logTimezone(config.timezone);
-      },
-      'Hourly time log',
-      { skipOnHoliday: false }
-    );
-
     // Schedule clock-in task
     schedulerService.scheduleTask(
       config.schedules.clockIn,
